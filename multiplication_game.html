@@ -1,0 +1,270 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Multiplication Challenge</title>
+    <!-- Load Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS for specific styling and overrides */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            background-color: #e0f2f7; /* A soft, light blue background for a friendly feel */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ensures the body takes at least the full viewport height */
+            margin: 0;
+            padding: 20px; /* Padding around the game container for smaller screens */
+            box-sizing: border-box; /* Includes padding and border in the element's total width and height */
+        }
+        .game-container {
+            background-color: #ffffff; /* White background for the game card */
+            border-radius: 20px; /* Rounded corners for a soft look */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            padding: 30px; /* Inner spacing */
+            text-align: center; /* Center align text content */
+            max-width: 500px; /* Maximum width for the game container */
+            width: 100%; /* Makes it responsive to screen width */
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            gap: 20px; /* Space between elements */
+            align-items: center; /* Center items horizontally within the flex container */
+        }
+        /* Styles for the grid container that holds the animal emojis */
+        #animal-image-grid {
+            display: grid; /* Changed to grid for explicit row/column layout */
+            /* grid-template-columns will be set by JavaScript based on num2 */
+            gap: 10px; /* Space between individual animal emojis in the grid */
+            width: 100%; /* Take full width of parent container */
+            max-width: 350px; /* Max width for the grid display */
+            min-height: 150px; /* Ensure some height even with few elements */
+            border: 3px solid #673ab7; /* A vibrant purple border around the grid */
+            border-radius: 15px; /* Rounded corners for the grid container */
+            padding: 15px; /* Padding inside the grid container */
+            background-color: #f3e5f5; /* Light purple background for the grid area */
+            justify-content: center; /* Center the grid within its container */
+        }
+        .animal-unit {
+            font-size: 2.5rem; /* Large size for the animal emoji */
+            line-height: 1; /* Adjust line height to prevent extra space around emojis */
+            margin: 0; /* Remove default margins from elements holding emoji */
+            /* Removed display: inline-flex as it's not needed for grid items */
+        }
+
+        /* The question-text div remains empty */
+        .question-text {
+            font-size: 2.25rem;
+            font-weight: bold;
+            color: #4a148c;
+            margin-top: 10px;
+            min-height: 2.25rem;
+            line-height: 1;
+        }
+        .answer-input {
+            padding: 12px 15px;
+            font-size: 1.25rem;
+            border: 2px solid #9c27b0;
+            border-radius: 10px;
+            text-align: center;
+            width: 200px; /* Increased width to accommodate full equation */
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        .answer-input:focus {
+            border-color: #673ab7;
+        }
+        .submit-button {
+            background: linear-gradient(145deg, #7e57c2, #5e35b1);
+            color: white;
+            padding: 12px 25px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.3);
+        }
+        .feedback-message {
+            font-size: 1.5rem;
+            font-weight: bold;
+            height: 30px;
+        }
+        .correct {
+            color: #4caf50;
+        }
+        .wrong {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Main title of the game -->
+        <h1 class="text-3xl font-extrabold text-purple-800 mb-4">Multiplication Animals!</h1>
+
+        <!-- Container for the animal array display -->
+        <div id="animal-image-grid" class="animal-image">
+            <!-- Animal emojis will be dynamically inserted here -->
+        </div>
+
+        <!-- Area for the multiplication problem (now empty, as input takes the full equation) -->
+        <div id="question-text" class="question-text"></div>
+
+        <!-- Input field for the student's answer, now expecting the full equation -->
+        <input type="text" id="answer-input" class="answer-input" placeholder="Type: 3x4=12">
+
+        <!-- Button to submit the answer -->
+        <button id="submit-button" class="submit-button">Check Answer</button>
+
+        <!-- Area to display feedback (Correct!/Wrong!) -->
+        <div id="feedback-message" class="feedback-message"></div>
+    </div>
+
+    <script>
+        // Define the emoji to represent an animal unit in the array
+        const animalEmoji = '🐻'; // Using a bear emoji for the animal units
+
+        // Object to store the current problem's details (numbers, answer)
+        let currentProblem = {};
+
+        // Get references to HTML elements
+        const animalImageGridElement = document.getElementById('animal-image-grid');
+        const questionTextElement = document.getElementById('question-text');
+        const answerInputElement = document.getElementById('answer-input');
+        const submitButtonElement = document.getElementById('submit-button');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+
+        /**
+         * Generates a new multiplication problem.
+         * It generates two random numbers between 1 and 10.
+         * It then dynamically creates and displays a grid of animal emojis
+         * to visually represent the multiplication problem with correct rows and columns.
+         */
+        function generateProblem() {
+            const num1 = Math.floor(Math.random() * 10) + 1; // Generates first number (rows) from 1 to 10
+            const num2 = Math.floor(Math.random() * 10) + 1; // Generates second number (columns) from 1 to 10
+
+            // Store the details of the newly generated problem
+            currentProblem = {
+                num1: num1,
+                num2: num2,
+                answer: num1 * num2, // The correct answer is the total count of animals
+            };
+
+            // Clear any previously displayed animals in the grid
+            animalImageGridElement.innerHTML = '';
+
+            // Set up the CSS Grid to represent rows and columns
+            animalImageGridElement.style.gridTemplateColumns = `repeat(${num2}, 1fr)`; // Create columns based on num2
+
+            // Dynamically create and append animal emojis for the grid
+            for (let i = 0; i < num1; i++) { // Loop for rows (num1)
+                for (let j = 0; j < num2; j++) { // Loop for columns (num2)
+                    const animalUnit = document.createElement('span');
+                    animalUnit.classList.add('animal-unit'); // Apply styling for emoji size
+                    animalUnit.textContent = animalEmoji; // Set the emoji
+                    animalImageGridElement.appendChild(animalUnit); // Add the emoji to the grid container
+                }
+            }
+
+            // Clear input field and feedback message, then focus on input
+            answerInputElement.value = '';
+            feedbackMessageElement.textContent = '';
+            answerInputElement.focus();
+
+            // For debugging/testing: Log the generated problem to the console
+            // console.log(`New problem: ${currentProblem.num1} x ${currentProblem.num2} = ${currentProblem.answer}`);
+        }
+
+        /**
+         * Checks the user's typed answer against the correct equation and product.
+         * Expected format: "num1xnum2=product" or "num2xnum1=product"
+         * It provides immediate visual feedback (Correct! or Wrong! Try again.)
+         * If the answer is correct, a new problem is generated after a short delay.
+         * If the answer is wrong, the input is cleared, but the same problem remains.
+         */
+        function checkAnswer() {
+            const userAnswerText = answerInputElement.value.trim().toLowerCase(); // Get user's input, trim spaces, convert to lowercase
+
+            // Validate input format first
+            if (!userAnswerText.includes('=') || !userAnswerText.includes('x')) {
+                feedbackMessageElement.textContent = 'Format: 3x4=12';
+                feedbackMessageElement.className = 'feedback-message wrong';
+                setTimeout(() => { feedbackMessageElement.textContent = ''; }, 3000);
+                return;
+            }
+
+            const parts = userAnswerText.split('=');
+            if (parts.length !== 2) {
+                feedbackMessageElement.textContent = 'Format: 3x4=12';
+                feedbackMessageElement.className = 'feedback-message wrong';
+                setTimeout(() => { feedbackMessageElement.textContent = ''; }, 3000);
+                return;
+            }
+
+            const equationPart = parts[0];
+            const productPart = parseInt(parts[1], 10);
+
+            const numbers = equationPart.split('x').map(num => parseInt(num, 10));
+
+            if (numbers.length !== 2 || isNaN(numbers[0]) || isNaN(numbers[1]) || isNaN(productPart)) {
+                feedbackMessageElement.textContent = 'Please use numbers and format: 3x4=12';
+                feedbackMessageElement.className = 'feedback-message wrong';
+                setTimeout(() => { feedbackMessageElement.textContent = ''; }, 3000);
+                return;
+            }
+
+            // Check if the numbers in the equation match the problem's numbers (order doesn't matter)
+            const correctNumbersMatch =
+                (numbers[0] === currentProblem.num1 && numbers[1] === currentProblem.num2) ||
+                (numbers[0] === currentProblem.num2 && numbers[1] === currentProblem.num1);
+
+            // Check if the product matches the correct answer
+            const correctProductMatch = productPart === currentProblem.answer;
+
+            // Check if the product matches the calculation from the input numbers
+            const calculatedProductMatch = (numbers[0] * numbers[1]) === productPart;
+
+
+            if (correctNumbersMatch && correctProductMatch && calculatedProductMatch) {
+                // If everything is correct
+                feedbackMessageElement.textContent = 'Correct!';
+                feedbackMessageElement.className = 'feedback-message correct';
+                setTimeout(() => {
+                    feedbackMessageElement.textContent = '';
+                    generateProblem();
+                }, 3000);
+            } else {
+                // If any part of the answer is wrong (equation or product)
+                feedbackMessageElement.textContent = 'Wrong! Try again.';
+                feedbackMessageElement.className = 'feedback-message wrong';
+                setTimeout(() => {
+                    feedbackMessageElement.textContent = '';
+                    answerInputElement.value = '';
+                    answerInputElement.focus();
+                }, 3000);
+            }
+        }
+
+        // Add event listeners
+        submitButtonElement.addEventListener('click', checkAnswer);
+        answerInputElement.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        // Initialize the game when the window loads
+        window.onload = function() {
+            generateProblem();
+        };
+    </script>
+</body>
+</html>
